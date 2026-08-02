@@ -14,10 +14,10 @@
   - [x] JSON 报告：meta + top_files + top_dirs（字段与 spec 对齐）
   - [x] 大小格式化：text 使用人类可读单位，json 使用 bytes
 
-- [ ] Task 4: 实现过滤能力（min-size 与 ignore）（Issue #3） @claimed-by:zhangyongtian @claim-at:2026-08-02 14:52 @issue:#3 @branch:agent/issue-3-20260802
-  - [ ] 解析 `--min-size`（支持 KB/MB/GB 或 KiB/MiB/GiB）
-  - [ ] 支持 `--ignore` 多次指定
-  - [ ] 支持 `--ignore-file` 读取忽略规则
+- [x] Task 4: 实现过滤能力（min-size 与 ignore）（Issue #3）
+  - [x] 解析 `--min-size`（支持 KB/MB/GB 或 KiB/MiB/GiB）
+  - [x] 支持 `--ignore` 多次指定
+  - [x] 支持 `--ignore-file` 读取忽略规则
 
 - [x] Task 5: 发布与多平台产物（CI / Release）（Issue #4）
   - [x] GitHub Actions：PR/Push 进行 build/test
@@ -25,7 +25,7 @@
   - [x] 生成 `sha256.txt` 并作为 Release asset 上传
   - [ ] 后续扩展：rpm/deb（可作为下一里程碑或后续 Task）
 
-- [ ] Task 6: 最小验证脚本（打印式验证）（Issue #5）
+- [ ] Task 6: 最小验证脚本（打印式验证）（Issue #5） @claimed-by:zhangyongtian @claim-at:2026-08-02 15:18 @issue:#5 @branch:agent/issue-5-20260802
   - [ ] 添加一个硬编码路径/测试目录的脚本或最小示例，验证 Top N 输出与 JSON 结构
   - [ ] 在 CI 中运行最小验证（不依赖复杂测试框架）
 
