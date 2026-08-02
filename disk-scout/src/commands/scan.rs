@@ -1,4 +1,4 @@
-use crate::{cli::ScanArgs, ignore::IgnoreConfig, plan::ScanPlan};
+use crate::{cli::ScanArgs, ignore::IgnoreConfig, output::OutputFormat, plan::ScanPlan, scanner};
 
 pub fn run(args: ScanArgs) -> i32 {
     let plan = ScanPlan {
@@ -13,24 +13,96 @@ pub fn run(args: ScanArgs) -> i32 {
         },
     };
 
-    print_plan(&plan);
-    0
+    match scanner::scan(&plan) {
+        Ok(result) => {
+            print_result(&plan, &result);
+            0
+        }
+        Err(e) => {
+            eprintln!("scan failed: {}: {}", e.root.display(), e.message);
+            2
+        }
+    }
 }
 
-fn print_plan(plan: &ScanPlan) {
-    println!("disk-scout scan plan:");
-    println!("  root: {}", plan.root.display());
-    println!("  top_files: {}", plan.top_files);
-    println!("  top_dirs: {}", plan.top_dirs);
-    println!("  min_size: {}", plan.min_size);
-    println!("  format: {}", plan.format);
-    println!("  ignore.patterns: {}", plan.ignore.patterns.len());
-    println!(
-        "  ignore.ignore_file: {}",
-        plan.ignore
-            .ignore_file
-            .as_ref()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|| "<none>".to_string())
-    );
+fn print_result(plan: &ScanPlan, result: &scanner::ScanResult) {
+    match plan.format {
+        OutputFormat::Text => print_result_text(plan, result),
+        OutputFormat::Json => print_result_json(plan, result),
+    }
+}
+
+fn print_result_text(plan: &ScanPlan, result: &scanner::ScanResult) {
+    println!("root: {}", plan.root.display());
+    println!("bytes_total: {}", result.stats.bytes_total);
+    println!("files_seen: {}", result.stats.files_seen);
+    println!("dirs_seen: {}", result.stats.dirs_seen);
+    println!("errors_total: {}", result.stats.errors_total);
+    println!("duration_ms: {}", result.stats.duration.as_millis());
+
+    println!();
+    println!("top_files:");
+    for item in &result.top_files {
+        println!("  {} {}", item.size, item.path.display());
+    }
+
+    println!();
+    println!("top_dirs:");
+    for item in &result.top_dirs {
+        println!("  {} {}", item.size, item.path.display());
+    }
+}
+
+fn print_result_json(plan: &ScanPlan, result: &scanner::ScanResult) {
+    println!("{{");
+    println!("  \"root\": \"{}\",", escape_json_string(&plan.root.display().to_string()));
+    println!("  \"stats\": {{");
+    println!("    \"bytes_total\": {},", result.stats.bytes_total);
+    println!("    \"files_seen\": {},", result.stats.files_seen);
+    println!("    \"dirs_seen\": {},", result.stats.dirs_seen);
+    println!("    \"errors_total\": {},", result.stats.errors_total);
+    println!("    \"duration_ms\": {}", result.stats.duration.as_millis());
+    println!("  }},");
+    println!("  \"top_files\": [");
+    for (idx, item) in result.top_files.iter().enumerate() {
+        let comma = if idx + 1 == result.top_files.len() { "" } else { "," };
+        println!(
+            "    {{ \"size\": {}, \"path\": \"{}\" }}{}",
+            item.size,
+            escape_json_string(&item.path.display().to_string()),
+            comma
+        );
+    }
+    println!("  ],");
+    println!("  \"top_dirs\": [");
+    for (idx, item) in result.top_dirs.iter().enumerate() {
+        let comma = if idx + 1 == result.top_dirs.len() { "" } else { "," };
+        println!(
+            "    {{ \"size\": {}, \"path\": \"{}\" }}{}",
+            item.size,
+            escape_json_string(&item.path.display().to_string()),
+            comma
+        );
+    }
+    println!("  ]");
+    println!("}}");
+}
+
+fn escape_json_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if c.is_control() => {
+                use std::fmt::Write;
+                write!(&mut out, "\\u{:04x}", c as u32).ok();
+            }
+            c => out.push(c),
+        }
+    }
+    out
 }
