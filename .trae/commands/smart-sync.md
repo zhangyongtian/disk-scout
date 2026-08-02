@@ -23,6 +23,7 @@ description: 对齐 specs 的任务与验收清单到 GitHub（plan/apply；支�
 - `apply`：用户确认后再次运行带 `apply` 才执行创建/更新；未带 `apply` 时仅生成计划（plan）
 - `commit=on|off`：apply 后是否将本地回填的变更提交到 main；默认 `on`
 - `base=<branch>`：用于同步 main 的基线分支；默认 `main`
+- `verbose=on|off`：是否展开打印“已完成/无变化”的条目；默认 `off`（仅输出增量与摘要）
 
 ## 1) 读取任务清单（必须）
 
@@ -69,6 +70,13 @@ description: 对齐 specs 的任务与验收清单到 GitHub（plan/apply；支�
   - 某个顶层 Task 缺少 Order（无法生成 `[NNN]`）
   - 无法识别 milestone
   - 依赖关系引用了不存在的任务
+
+输出规则（默认增量，避免任务多时刷屏）：
+- 默认（`verbose=off`）：
+  - 仅输出：open issues、存在差异的条目、本次会发生的写入动作摘要、以及 checklist 将进入 `[-]` 的条目
+  - 已 closed 且已对齐（labels/milestone 完整）的 issues 仅输出计数，不逐条打印
+- `verbose=on`：
+  - 允许展开输出所有匹配到的 closed issues 与所有 checklist 条目状态
 
 ## 3) 写入 GitHub（仅当带 apply）
 
@@ -155,3 +163,11 @@ apply 步骤（必须幂等）：
 - 下一步建议：
   - `git status` 应为干净
   - 用 `/smart-claim` 从最新 main 开始领取任务
+
+输出规则（默认增量，避免任务多时刷屏）：
+- 默认（`verbose=off`）：
+  - 仅逐条打印：open issues 的变更、以及本次创建/更新/补齐的 issues
+  - closed issues 若无变化仅输出计数（例如：`closed issues aligned: 12 (hidden)`）
+  - checklist 仅输出“本次从 `[ ] -> [-]` 的新增条目”与“仍被阻塞的条目摘要”
+- `verbose=on`：
+  - 允许展开输出所有对齐对象（open + closed）与所有 checklist 条目状态
