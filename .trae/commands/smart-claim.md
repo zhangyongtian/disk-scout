@@ -128,10 +128,18 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
      - Files Changed（`git diff --name-only origin/main..HEAD` 实际输出）
      - `Closes: #<number>`
 5. 合并策略（必须）
-   - 若可直接合并：执行 merge 并删除分支
+   - 若可直接合并：执行 merge，并在合并完成后删除分支（见“分支删除说明”）
    - 否则若指定 `automerge`：尝试开启 auto-merge（失败则输出阻塞原因并停止）
    - 若不可直接合并且未指定 `automerge`：停止并输出阻塞原因（等待 CI/Review），避免继续领取导致 in-progress 过多
    - 合并成功后同步本地 main（fast-forward）
+
+### 分支删除说明（合并后）
+
+合并后“远程分支是否自动删除”不是必然行为，依赖于仓库设置与合并方式：
+
+- 推荐：在 GitHub 仓库设置开启 Automatically delete head branches（PR 合并后自动删除 head 分支）。
+- 若使用 `gh pr merge` 执行合并：合并命令可追加 `--delete-branch`（若当前 gh 版本支持）以在合并后删除远程分支。
+- 若分支已合并但仍残留：手动删除远程分支 `git push origin --delete <branch>`；本地分支可再 `git branch -d <branch>` 清理（可选）。
 
 ## 5) 完成后继续领取（必须）
 

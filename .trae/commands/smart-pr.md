@@ -120,7 +120,16 @@ Closes: #<issue>（可选）
 
 1. 仅当 PR 已成功创建且 `gh` 可用时执行：
    - `gh pr merge --auto --merge`
+   - 说明：本命令只负责创建 PR/可选开启 auto-merge，不保证“合并后删除分支”。删除分支由仓库设置或后续合并流程负责（见下方说明）。
 2. 若仓库策略要求审批或检查未通过，不要强行合并；仅输出当前阻塞条件（例如缺少 review、CI 未通过）。
+
+## 分支删除说明（合并后）
+
+合并后“远程分支是否自动删除”取决于仓库设置与合并方式，本命令本身不会主动删除分支：
+
+- 推荐：在 GitHub 仓库设置开启 Automatically delete head branches（PR 合并后自动删除 head 分支）。
+- 若使用 `gh pr merge` 执行合并：可在合并命令中追加 `--delete-branch`（若当前 gh 版本支持）以在合并后删除远程分支。
+- 若分支已合并但仍残留：可手动删除远程分支 `git push origin --delete <branch>`；本地分支可再 `git branch -d <branch>` 清理（可选）。
 
 ## 6) 输出总结（必须）
 
