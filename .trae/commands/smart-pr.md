@@ -15,6 +15,7 @@ description: 将当前分支的提交推送到远端并创建 PR（支持可选�
 - `issue=<number>`：关联的任务编号（可选，常见为 Issue 编号）；提供后 PR body 追加 `Closes: #<issue>`
 - `base=<branch>`：目标基线分支，默认 `main`
 - `automerge`：在 PR 创建后尝试开启 Auto-merge（需要仓库允许且 CI/规则通过）
+- `commits-raw=on|off`：是否在 PR body 中附带纯文本 commits 列表（`git log --oneline ...`）；默认 `off`（避免与 Linkable 重复）
 
 严格遵循：`.trae/rules/git-commit-message.md`（本命令不会改写 commit message，但会用其风格生成 PR 标题/描述）。
 
@@ -29,6 +30,7 @@ description: 将当前分支的提交推送到远端并创建 PR（支持可选�
    - `task` 缺省为 `misc`
    - `order` 缺省为空
    - `issue` 缺省为空
+   - `commits-raw` 缺省为 `off`
 
 若指定了 `automerge` 但未提供 `order`，停止并提示补齐 `order`（用于合并队列排序）。
 
@@ -64,7 +66,7 @@ description: 将当前分支的提交推送到远端并创建 PR（支持可选�
    - Order：来自 `order` 参数（若提供）
    - Summary：用 3–6 条要点概述本次变更意图（不要只罗列文件名）
    - Commits（Linkable）：以 markdown link 列表形式贴出（让 reviewer 可点击跳转到每个 commit）
-   - Commits（Raw，可选）：如需要保留“命令原始输出”，再追加 `git log --oneline origin/<base>..HEAD` 的逐行文本
+   - Commits（Raw，可选）：仅当 `commits-raw=on` 或 Linkable 无法生成时才追加，避免与 Linkable 重复
    - Files Changed：贴 `git diff --name-only origin/<base>..HEAD`
    - Known Limitations / Follow-ups：如有则写
    - 若提供 `issue`：
@@ -84,9 +86,6 @@ Summary:
 Commits (Linkable):
 - [<sha7>](<repo_url>/commit/<sha40>) <subject>
 
-Commits (Raw, optional):
-<把 git log --oneline origin/<base>..HEAD 的实际输出逐行贴在这里>
-
 Files Changed:
 <把 git diff --name-only origin/<base>..HEAD 的实际输出逐行贴在这里>
 
@@ -94,6 +93,13 @@ Known Limitations / Follow-ups:
 - （可选）
 
 Closes: #<issue>（可选）
+```
+
+当 `commits-raw=on` 或 Linkable 无法生成时，在 `Commits (Linkable)` 之后追加：
+
+```
+Commits (Raw):
+<把 git log --oneline origin/<base>..HEAD 的实际输出逐行贴在这里>
 ```
 
 一致性判断建议：
