@@ -9,7 +9,7 @@
   - [x] 实现文件大小统计与目录大小汇总（按目录聚合）
   - [x] 维护 Top N 最大文件与 Top N 最大目录（避免全量排序）
 
-- [ ] Task 3: 实现报告输出（text/json）（Issue #2）
+- [ ] Task 3: 实现报告输出（text/json）（Issue #2） @claimed-by:zhangyongtian @claim-at:2026-08-02 15:00 @issue:#2 @branch:agent/issue-2-20260802
   - [ ] 文本报告：包含扫描元信息、统计信息、Top 文件/目录列表
   - [ ] JSON 报告：meta + top_files + top_dirs（字段与 spec 对齐）
   - [ ] 大小格式化：text 使用人类可读单位，json 使用 bytes
