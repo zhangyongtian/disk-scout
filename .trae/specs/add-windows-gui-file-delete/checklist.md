@@ -1,0 +1,7 @@
+- [ ] Windows 平台存在可运行的 `disk-scout-gui` 程序入口，能启动并展示基础 UI
+- [ ] GUI 支持选择扫描根路径与配置参数（top-files/top-dirs/min-size/ignore/ignore-file）
+- [ ] GUI 能触发一次扫描并展示 Top 文件与 Top 目录列表（路径 + 人类可读大小）
+- [ ] GUI 的删除操作具备二次确认，并默认优先移入回收站（或在不可用时拒绝并提示）
+- [ ] GUI 删除仅允许作用于扫描根路径内的常规文件（包含路径边界校验）
+- [ ] CLI `disk-scout scan` 行为保持只读且不受 GUI 引入影响
+- [ ] Windows Release 包同时包含 CLI 与 GUI，并在 README 中说明双击行为与使用方式
