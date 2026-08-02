@@ -51,7 +51,7 @@ fn render_result_text(plan: &ScanPlan, result: &scanner::ScanResult) -> String {
 
     let mut out = String::new();
 
-    writeln!(&mut out, "root: {}", plan.root.display()).ok();
+    writeln!(&mut out, "root: {}", result.root.display()).ok();
     writeln!(
         &mut out,
         "bytes_total: {} ({})",
@@ -103,7 +103,7 @@ fn render_result_json(plan: &ScanPlan, result: &scanner::ScanResult) -> String {
     writeln!(
         &mut out,
         "    \"scan_root\": \"{}\",",
-        escape_json_string(&plan.root.display().to_string())
+        escape_json_string(&result.root.display().to_string())
     )
     .ok();
     writeln!(&mut out, "    \"stats\": {{").ok();

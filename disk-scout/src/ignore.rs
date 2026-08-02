@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug, Default)]
 pub struct IgnoreConfig {
@@ -9,6 +9,7 @@ pub struct IgnoreConfig {
 #[derive(Clone, Debug, Default)]
 pub struct IgnoreMatcher {
     patterns: Vec<String>,
+    ignore_file: Option<PathBuf>,
 }
 
 impl IgnoreMatcher {
@@ -27,10 +28,32 @@ impl IgnoreMatcher {
             }
         }
 
-        Ok(Self { patterns })
+        Ok(Self {
+            patterns,
+            ignore_file: config.ignore_file.clone(),
+        })
     }
 
-    pub fn is_ignored_path(&self, relative_path: &str, file_name: Option<&str>) -> bool {
+    pub fn is_ignored_path(
+        &self,
+        absolute_path: &Path,
+        relative_path: &str,
+        file_name: Option<&str>,
+    ) -> bool {
+        if let Some(ignore_file) = &self.ignore_file {
+            if absolute_path == ignore_file {
+                return true;
+            }
+            if let Some(ignore_name) = ignore_file.file_name().and_then(|s| s.to_str()) {
+                if relative_path == ignore_name {
+                    return true;
+                }
+                if file_name == Some(ignore_name) {
+                    return true;
+                }
+            }
+        }
+
         if self.patterns.is_empty() {
             return false;
         }
@@ -105,9 +128,18 @@ mod tests {
     fn matcher_checks_full_path_and_file_name() {
         let m = IgnoreMatcher {
             patterns: vec!["*.tmp".to_string(), "target/*".to_string()],
+            ignore_file: None,
         };
-        assert!(m.is_ignored_path("foo.tmp", Some("foo.tmp")));
-        assert!(m.is_ignored_path("target/debug/a", Some("a")));
-        assert!(!m.is_ignored_path("src/main.rs", Some("main.rs")));
+        assert!(m.is_ignored_path(Path::new("foo.tmp"), "foo.tmp", Some("foo.tmp")));
+        assert!(m.is_ignored_path(
+            Path::new("target/debug/a"),
+            "target/debug/a",
+            Some("a")
+        ));
+        assert!(!m.is_ignored_path(
+            Path::new("src/main.rs"),
+            "src/main.rs",
+            Some("main.rs")
+        ));
     }
 }
