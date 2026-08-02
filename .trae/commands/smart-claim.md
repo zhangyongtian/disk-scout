@@ -21,6 +21,8 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
 - `watch-interval=<seconds>`：watch 轮询间隔；默认 60（仅当 watch=on 时生效）
 - `release-on-stop=on|off`：人为停止时是否释放当前已领取但未产出 PR 的任务；默认 `on`
 - `local-claim=on|off`：是否在本地 main 的 tasks.md 先做“占位标记”再同步远端；默认 `on`
+- `verify=on|off`：是否在本地执行“最小验证”命令；默认 `off`（保持命令通用，由 CI 或用户手动验证）
+- `verify-cmd=<cmd>`：本地最小验证命令（仅当 verify=on 时生效），例如 `cargo test` / `bash scripts/verify.sh`
 
 ## 1) 前置检查（必须）
 
@@ -104,7 +106,8 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
    - 分支命名必须包含 Issue 编号，以便从分支名一眼看出“谁在做什么”
 2. 实现与验证（必须）
    - 读取该 Issue 的 Summary/DoD，按 DoD 实现
-   - 执行最小验证（项目约定的 print-based / 脚本验证）
+   - 若 `verify=on`：执行最小验证（项目约定的 print-based / 脚本验证），命令由 `verify-cmd` 指定
+   - 若 `verify=off`：跳过本地验证，仅确保已生成可复现的验证脚本/用例，并在 PR 中说明如何验证
 3. 自动提交（必须）
    - 按 `.trae/rules/git-commit-message.md` 生成原子提交
    - commit message trailers 必须包含：
@@ -119,8 +122,9 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
      - Files Changed（`git diff --name-only origin/main..HEAD` 实际输出）
      - `Closes: #<number>`
 5. 合并策略（必须）
-   - 若指定 `automerge`：优先尝试开启 auto-merge（失败则输出阻塞原因并停止）
-   - 否则若可直接合并：执行 merge 并删除分支
+   - 若可直接合并：执行 merge 并删除分支
+   - 否则若指定 `automerge`：尝试开启 auto-merge（失败则输出阻塞原因并停止）
+   - 若不可直接合并且未指定 `automerge`：停止并输出阻塞原因（等待 CI/Review），避免继续领取导致 in-progress 过多
    - 合并成功后同步本地 main（fast-forward）
 
 ## 5) 完成后继续领取（必须）
@@ -146,7 +150,7 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
   - 必须说明当前有哪些任务正在执行中（`status/in-progress` 列表）
 - 不进入循环等待，不进行轮询空转
 
-若 `watch=on`（默认）：
+若 `watch=on`（非默认）：
 - 输出“等待中”的原因摘要（例如依赖未完成的 issue 列表）
 - 每 `watch-interval` 秒重新评估一次是否出现可领取任务
 - 一旦出现可领取任务，立即继续领取并进入自动开发循环
