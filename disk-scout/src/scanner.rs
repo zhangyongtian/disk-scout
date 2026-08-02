@@ -248,7 +248,7 @@ fn scan_dir(root: &Path, path: &Path, ignore: &IgnoreMatcher, state: &mut ScanSt
         }
 
         if meta.is_dir() {
-            if ignore.is_ignored_path(&child_rel, child_name.as_deref()) {
+            if ignore.is_ignored_path(&child_path, &child_rel, child_name.as_deref()) {
                 continue;
             }
             sum = sum.saturating_add(scan_dir(root, &child_path, ignore, state));
@@ -256,7 +256,7 @@ fn scan_dir(root: &Path, path: &Path, ignore: &IgnoreMatcher, state: &mut ScanSt
         }
 
         if meta.is_file() {
-            if ignore.is_ignored_path(&child_rel, child_name.as_deref()) {
+            if ignore.is_ignored_path(&child_path, &child_rel, child_name.as_deref()) {
                 continue;
             }
             state.stats.files_seen += 1;
