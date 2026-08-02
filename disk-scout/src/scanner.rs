@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::plan::ScanPlan;
+use crate::{ignore::IgnoreMatcher, plan::ScanPlan};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SizedPath {
@@ -65,12 +65,16 @@ pub fn scan(plan: &ScanPlan) -> Result<ScanResult, ScanInitError> {
     }
 
     let mut state = ScanState::new(plan.top_files, plan.top_dirs, plan.min_size);
+    let ignore = IgnoreMatcher::from_config(&plan.ignore).map_err(|e| ScanInitError {
+        root: plan.root.clone(),
+        message: format!("failed to read ignore rules: {e}"),
+    })?;
 
     let bytes_total = if root_meta.is_dir() {
-        scan_dir(&plan.root, &mut state)
+        scan_dir(&plan.root, &plan.root, &ignore, &mut state)
     } else if root_meta.is_file() {
-        state.stats.files_seen += 1;
         let size = root_meta.len();
+        state.stats.files_seen += 1;
         state.consider_file(plan.root.clone(), size);
         size
     } else {
@@ -198,7 +202,7 @@ impl ScanState {
     }
 }
 
-fn scan_dir(path: &Path, state: &mut ScanState) -> u64 {
+fn scan_dir(root: &Path, path: &Path, ignore: &IgnoreMatcher, state: &mut ScanState) -> u64 {
     state.stats.dirs_seen += 1;
 
     let mut sum = 0u64;
@@ -221,6 +225,14 @@ fn scan_dir(path: &Path, state: &mut ScanState) -> u64 {
         };
 
         let child_path = entry.path();
+        let child_rel = match child_path.strip_prefix(root) {
+            Ok(p) => normalize_rel_path(p),
+            Err(_) => child_path.to_string_lossy().to_string(),
+        };
+        let child_name = child_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string());
 
         let meta = match std::fs::symlink_metadata(&child_path) {
             Ok(m) => m,
@@ -236,11 +248,17 @@ fn scan_dir(path: &Path, state: &mut ScanState) -> u64 {
         }
 
         if meta.is_dir() {
-            sum = sum.saturating_add(scan_dir(&child_path, state));
+            if ignore.is_ignored_path(&child_rel, child_name.as_deref()) {
+                continue;
+            }
+            sum = sum.saturating_add(scan_dir(root, &child_path, ignore, state));
             continue;
         }
 
         if meta.is_file() {
+            if ignore.is_ignored_path(&child_rel, child_name.as_deref()) {
+                continue;
+            }
             state.stats.files_seen += 1;
             let size = meta.len();
             sum = sum.saturating_add(size);
@@ -251,6 +269,21 @@ fn scan_dir(path: &Path, state: &mut ScanState) -> u64 {
 
     state.consider_dir(path.to_path_buf(), sum);
     sum
+}
+
+fn normalize_rel_path(path: &Path) -> String {
+    let mut out = String::new();
+    for c in path.components() {
+        let s = c.as_os_str().to_string_lossy();
+        if s.is_empty() {
+            continue;
+        }
+        if !out.is_empty() {
+            out.push('/');
+        }
+        out.push_str(&s);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -294,6 +327,43 @@ mod tests {
         assert_eq!(result.top_files.len(), 2);
         assert_eq!(result.top_files[0].size, 30);
         assert_eq!(result.top_files[1].size, 20);
+
+        std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn applies_min_size_and_ignore_rules() {
+        let root = mk_tmp_root("filter");
+        let keep = root.join("keep");
+        let skip = root.join("skip");
+        std::fs::create_dir_all(&keep).unwrap();
+        std::fs::create_dir_all(&skip).unwrap();
+
+        std::fs::write(keep.join("small.bin"), vec![0u8; 10]).unwrap();
+        std::fs::write(keep.join("big.bin"), vec![0u8; 2048]).unwrap();
+        std::fs::write(skip.join("ignored.bin"), vec![0u8; 4096]).unwrap();
+
+        let ignore_file = root.join(".disk-scout-ignore");
+        std::fs::write(&ignore_file, "# comment\nskip/*\n").unwrap();
+
+        let plan = ScanPlan {
+            root: root.clone(),
+            top_files: 10,
+            top_dirs: 10,
+            min_size: 1024,
+            format: crate::output::OutputFormat::Text,
+            ignore: crate::ignore::IgnoreConfig {
+                patterns: vec!["*.tmp".to_string()],
+                ignore_file: Some(ignore_file),
+            },
+        };
+
+        let result = scan(&plan).unwrap();
+
+        assert_eq!(result.stats.files_seen, 2);
+        assert_eq!(result.stats.bytes_total, 10 + 2048);
+        assert_eq!(result.top_files.len(), 1);
+        assert!(result.top_files[0].path.ends_with("big.bin"));
 
         std::fs::remove_dir_all(&root).unwrap();
     }
