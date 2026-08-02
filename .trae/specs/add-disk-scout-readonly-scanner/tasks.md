@@ -23,11 +23,10 @@
   - [x] GitHub Actions：PR/Push 进行 build/test
   - [x] Tag/Release 时产出多平台可运行包：Linux tar.gz + Windows zip（含 .exe）
   - [x] 生成 `sha256.txt` 并作为 Release asset 上传
-  - [ ] 后续扩展：rpm/deb（可作为下一里程碑或后续 Task）
 
-- [ ] Task 6: 最小验证脚本（打印式验证）（Issue #5） @claimed-by:zhangyongtian @claim-at:2026-08-02 15:18 @issue:#5 @branch:agent/issue-5-20260802
-  - [ ] 添加一个硬编码路径/测试目录的脚本或最小示例，验证 Top N 输出与 JSON 结构
-  - [ ] 在 CI 中运行最小验证（不依赖复杂测试框架）
+- [x] Task 6: 最小验证脚本（打印式验证）（Issue #5）
+  - [x] 添加一个硬编码路径/测试目录的脚本或最小示例，验证 Top N 输出与 JSON 结构
+  - [x] 在 CI 中运行最小验证（不依赖复杂测试框架）
 
 # Task Dependencies
 - Task 2 depends on Task 1

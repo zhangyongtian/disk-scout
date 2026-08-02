@@ -21,6 +21,7 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
 - `watch-interval=<seconds>`：watch 轮询间隔；默认 60（仅当 watch=on 时生效）
 - `release-on-stop=on|off`：人为停止时是否释放当前已领取但未产出 PR 的任务；默认 `on`
 - `local-claim=on|off`：是否在本地 main 的 tasks.md 先做“占位标记”再同步远端；默认 `on`
+- `local-finish=on|off`：当某个 Issue 已完成并合并后，是否回填本地 tasks.md 的完成状态；默认 `on`
 - `verify=on|off`：是否在本地执行“最小验证”命令；默认 `off`（保持命令通用，由 CI 或用户手动验证）
 - `verify-cmd=<cmd>`：本地最小验证命令（仅当 verify=on 时生效），例如 `cargo test` / `bash scripts/verify.sh`
 
@@ -140,6 +141,19 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
   - 保持 `status/in-progress`
   - 输出阻塞原因（例如等待 review/CI）
   - 不再领取新任务，避免并发过多导致混乱
+
+若 `local-finish=on` 且 issue 已 closed：
+- 切回并同步本地 main：
+  - `git fetch origin main --prune`
+  - `git switch main`
+  - `git pull --ff-only`
+- 在 `.trae/specs/<change-id>/tasks.md` 中找到对应 Task（通过 `（Issue #<number>）` 匹配）并回填：
+  - 将顶层 Task 标记为 `[x]`
+  - 将子项标记为 `[x]`
+  - 移除该行的 `@claimed-by/@claim-at/@issue/@branch` 标记（避免“已完成但仍显示领取中”）
+- 将回填提交到 main（仅允许提交 tasks.md）：
+  - `chore(claim): 标记任务已完成（Issue #<number>）`
+  - trailers：`Agent-Task` / `Agent-Decision`
 
 ## 6) 无可领取任务时的行为（必须）
 
