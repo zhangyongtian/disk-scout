@@ -39,96 +39,135 @@ fn print_result(plan: &ScanPlan, result: &scanner::ScanResult) {
 }
 
 fn print_result_text(plan: &ScanPlan, result: &scanner::ScanResult) {
-    println!("root: {}", plan.root.display());
-    println!(
-        "bytes_total: {} ({})",
-        format_bytes(result.stats.bytes_total),
-        result.stats.bytes_total
-    );
-    println!("files_seen: {}", result.stats.files_seen);
-    println!("dirs_seen: {}", result.stats.dirs_seen);
-    println!("errors_total: {}", result.stats.errors_total);
-    println!("duration_ms: {}", result.stats.duration.as_millis());
-
-    println!();
-    println!("top_files:");
-    for item in &result.top_files {
-        println!(
-            "  {} ({}) {}",
-            format_bytes(item.size),
-            item.size,
-            item.path.display()
-        );
-    }
-
-    println!();
-    println!("top_dirs:");
-    for item in &result.top_dirs {
-        println!(
-            "  {} ({}) {}",
-            format_bytes(item.size),
-            item.size,
-            item.path.display()
-        );
-    }
+    print!("{}", render_result_text(plan, result));
 }
 
 fn print_result_json(plan: &ScanPlan, result: &scanner::ScanResult) {
-    println!("{{");
-    println!("  \"meta\": {{");
-    println!(
+    print!("{}", render_result_json(plan, result));
+}
+
+fn render_result_text(plan: &ScanPlan, result: &scanner::ScanResult) -> String {
+    use std::fmt::Write;
+
+    let mut out = String::new();
+
+    writeln!(&mut out, "root: {}", plan.root.display()).ok();
+    writeln!(
+        &mut out,
+        "bytes_total: {} ({})",
+        format_bytes(result.stats.bytes_total),
+        result.stats.bytes_total
+    )
+    .ok();
+    writeln!(&mut out, "files_seen: {}", result.stats.files_seen).ok();
+    writeln!(&mut out, "dirs_seen: {}", result.stats.dirs_seen).ok();
+    writeln!(&mut out, "errors_total: {}", result.stats.errors_total).ok();
+    writeln!(&mut out, "duration_ms: {}", result.stats.duration.as_millis()).ok();
+
+    writeln!(&mut out).ok();
+    writeln!(&mut out, "top_files:").ok();
+    for item in &result.top_files {
+        writeln!(
+            &mut out,
+            "  {} ({}) {}",
+            format_bytes(item.size),
+            item.size,
+            item.path.display()
+        )
+        .ok();
+    }
+
+    writeln!(&mut out).ok();
+    writeln!(&mut out, "top_dirs:").ok();
+    for item in &result.top_dirs {
+        writeln!(
+            &mut out,
+            "  {} ({}) {}",
+            format_bytes(item.size),
+            item.size,
+            item.path.display()
+        )
+        .ok();
+    }
+
+    out
+}
+
+fn render_result_json(plan: &ScanPlan, result: &scanner::ScanResult) -> String {
+    use std::fmt::Write;
+
+    let mut out = String::new();
+
+    writeln!(&mut out, "{{").ok();
+    writeln!(&mut out, "  \"meta\": {{").ok();
+    writeln!(
+        &mut out,
         "    \"scan_root\": \"{}\",",
         escape_json_string(&plan.root.display().to_string())
-    );
-    println!("    \"stats\": {{");
-    println!("      \"bytes_total\": {},", result.stats.bytes_total);
-    println!("      \"files_seen\": {},", result.stats.files_seen);
-    println!("      \"dirs_seen\": {},", result.stats.dirs_seen);
-    println!("      \"errors_total\": {},", result.stats.errors_total);
-    println!("      \"duration_ms\": {}", result.stats.duration.as_millis());
-    println!("    }}");
-    println!("  }},");
-    println!("  \"top_files\": [");
+    )
+    .ok();
+    writeln!(&mut out, "    \"stats\": {{").ok();
+    writeln!(&mut out, "      \"bytes_total\": {},", result.stats.bytes_total).ok();
+    writeln!(&mut out, "      \"files_seen\": {},", result.stats.files_seen).ok();
+    writeln!(&mut out, "      \"dirs_seen\": {},", result.stats.dirs_seen).ok();
+    writeln!(&mut out, "      \"errors_total\": {},", result.stats.errors_total).ok();
+    writeln!(
+        &mut out,
+        "      \"duration_ms\": {}",
+        result.stats.duration.as_millis()
+    )
+    .ok();
+    writeln!(&mut out, "    }}").ok();
+    writeln!(&mut out, "  }},").ok();
+    writeln!(&mut out, "  \"top_files\": [").ok();
     for (idx, item) in result.top_files.iter().enumerate() {
         let comma = if idx + 1 == result.top_files.len() { "" } else { "," };
-        println!(
+        writeln!(
+            &mut out,
             "    {{ \"size_bytes\": {}, \"path\": \"{}\" }}{}",
             item.size,
             escape_json_string(&item.path.display().to_string()),
             comma
-        );
+        )
+        .ok();
     }
-    println!("  ],");
-    println!("  \"top_dirs\": [");
+    writeln!(&mut out, "  ],").ok();
+    writeln!(&mut out, "  \"top_dirs\": [").ok();
     for (idx, item) in result.top_dirs.iter().enumerate() {
         let comma = if idx + 1 == result.top_dirs.len() { "" } else { "," };
-        println!(
+        writeln!(
+            &mut out,
             "    {{ \"size_bytes\": {}, \"path\": \"{}\" }}{}",
             item.size,
             escape_json_string(&item.path.display().to_string()),
             comma
-        );
+        )
+        .ok();
     }
-    println!("  ],");
-    println!("  \"errors\": {{");
-    println!("    \"total\": {},", result.errors.total);
-    println!("    \"samples\": [");
+    writeln!(&mut out, "  ],").ok();
+    writeln!(&mut out, "  \"errors\": {{").ok();
+    writeln!(&mut out, "    \"total\": {},", result.errors.total).ok();
+    writeln!(&mut out, "    \"samples\": [").ok();
     for (idx, sample) in result.errors.samples.iter().enumerate() {
         let comma = if idx + 1 == result.errors.samples.len() {
             ""
         } else {
             ","
         };
-        println!(
+        writeln!(
+            &mut out,
             "      {{ \"path\": \"{}\", \"message\": \"{}\" }}{}",
             escape_json_string(&sample.path.display().to_string()),
             escape_json_string(&sample.message),
             comma
-        );
+        )
+        .ok();
     }
-    println!("    ]");
-    println!("  }}");
-    println!("}}");
+    writeln!(&mut out, "    ]").ok();
+    writeln!(&mut out, "  }}").ok();
+    writeln!(&mut out, "}}").ok();
+
+    out
 }
 
 fn escape_json_string(s: &str) -> String {
@@ -148,4 +187,88 @@ fn escape_json_string(s: &str) -> String {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn renders_text_report() {
+        let plan = ScanPlan {
+            root: "/tmp/root".into(),
+            top_files: 2,
+            top_dirs: 2,
+            min_size: 0,
+            format: OutputFormat::Text,
+            ignore: IgnoreConfig::default(),
+        };
+
+        let result = scanner::ScanResult {
+            root: plan.root.clone(),
+            stats: scanner::ScanStats {
+                files_seen: 3,
+                dirs_seen: 2,
+                bytes_total: 2048,
+                errors_total: 1,
+                duration: std::time::Duration::from_millis(12),
+            },
+            top_files: vec![scanner::SizedPath {
+                path: "/tmp/root/a.bin".into(),
+                size: 2048,
+            }],
+            top_dirs: vec![scanner::SizedPath {
+                path: "/tmp/root".into(),
+                size: 2048,
+            }],
+            errors: scanner::ScanErrors {
+                total: 1,
+                samples: vec![scanner::ScanErrorSample {
+                    path: "/tmp/root/x".into(),
+                    message: "denied".to_string(),
+                }],
+            },
+        };
+
+        let out = render_result_text(&plan, &result);
+        assert!(out.contains("root: "));
+        assert!(out.contains("bytes_total: "));
+        assert!(out.contains("KiB"));
+        assert!(out.contains("top_files:"));
+        assert!(out.contains("top_dirs:"));
+    }
+
+    #[test]
+    fn renders_json_report() {
+        let plan = ScanPlan {
+            root: "/tmp/root".into(),
+            top_files: 2,
+            top_dirs: 2,
+            min_size: 0,
+            format: OutputFormat::Json,
+            ignore: IgnoreConfig::default(),
+        };
+
+        let result = scanner::ScanResult {
+            root: plan.root.clone(),
+            stats: scanner::ScanStats {
+                files_seen: 1,
+                dirs_seen: 1,
+                bytes_total: 1,
+                errors_total: 0,
+                duration: std::time::Duration::from_millis(1),
+            },
+            top_files: vec![],
+            top_dirs: vec![],
+            errors: scanner::ScanErrors::default(),
+        };
+
+        let out = render_result_json(&plan, &result);
+        assert!(out.contains("\"meta\""));
+        assert!(out.contains("\"scan_root\""));
+        assert!(out.contains("\"stats\""));
+        assert!(out.contains("\"top_files\""));
+        assert!(out.contains("\"top_dirs\""));
+        assert!(out.contains("\"errors\""));
+    }
 }
