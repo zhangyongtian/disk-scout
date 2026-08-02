@@ -23,6 +23,8 @@ description: 对齐 specs 的任务与验收清单到 GitHub（plan/apply；支�
 - `apply`：用户确认后再次运行带 `apply` 才执行创建/更新；未带 `apply` 时仅生成计划（plan）
 - `commit=on|off`：apply 后是否将本地回填的变更提交到 main；默认 `on`
 - `base=<branch>`：用于同步 main 的基线分支；默认 `main`
+- `push=on|off`：apply 后是否将本地 `<base>` 推送到 `origin/<base>`；默认 `off`（避免在未确认时改远端）
+- `commit-scope=sync|trae|repo`：`commit=on` 时允许提交的文件范围；默认 `sync`
 - `verbose=on|off`：是否展开打印“已完成/无变化”的条目；默认 `off`（仅输出增量与摘要）
 
 ## 1) 读取任务清单（必须）
@@ -95,6 +97,10 @@ apply 步骤（必须幂等）：
   - `git fetch origin <base> --prune`
   - `git switch <base>`
   - `git pull --ff-only`
+ - 若当前已在 `<base>`：
+   - 仍必须先拉取并快进同步：
+     - `git fetch origin <base> --prune`
+     - `git pull --ff-only`
 
 ### 3.2 Labels（必须）
 
@@ -147,11 +153,28 @@ apply 步骤（必须幂等）：
 ### 3.7 将回填结果提交到 main（默认开启）
 
 若 `commit=on`：
-- 确认仅包含 `.trae/specs/<change>/tasks.md` 与 `.trae/specs/<change>/checklist.md` 的变更
+- 先根据 `commit-scope` 校验“可提交文件范围”：
+  - `commit-scope=sync`（默认）：仅允许提交本次对齐产生的回填文件：
+    - `.trae/specs/<change>/tasks.md`
+    - `.trae/specs/<change>/checklist.md`
+  - `commit-scope=trae`：允许提交 `.trae/` 目录下所有变更（包含命令/规则/规格文档的同步改动）
+  - `commit-scope=repo`：允许提交仓库内所有变更（仅当用户明确要求“全部一起提交并推送”时使用）
+- 若发现存在超出允许范围的变更：
+  - 必须停止并输出文件清单
+  - 提示用户改用更大的 `commit-scope`，或先清理无关改动后再执行
 - 在 `<base>`（默认 main）上提交：
   - `chore(sync): 对齐 specs 与 GitHub 任务状态`
   - body 必须包含：change-id、同步到的 milestones/issues 数量、是否有新建 issue
-- 不允许 push（push/PR 仍然走 `/smart-pr`）
+- push 行为由 `push=on|off` 控制（默认 `off`）
+
+### 3.8 将 `<base>` 推送到远端（可选）
+
+若 `push=on`：
+- 必须确保 3.1 已对 `origin/<base>` 做过 `pull --ff-only`
+- 若 `commit=on`，必须确保待推送的本地提交已包含本次允许范围内的所有变更；否则先按 3.7 完成提交
+- 推送：
+  - `git push origin <base>`
+- 若推送失败（远端领先/需要 rebase 等），停止并提示用户重新执行 3.1 后再尝试推送（禁止强推）
 
 ## 4) 输出结果（必须）
 
