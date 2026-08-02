@@ -17,9 +17,10 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
 - `automerge`：提交 PR 后尝试开启 auto-merge（建议默认开启）
 - `mode=auto|manual`：默认 `auto`；manual 只“领取+建分支”，后续由用户手动 `/smart-commit` `/smart-pr` `/smart-merge`
 - `limit=<N>`：最多连续领取 N 个任务（默认 999）
-- `watch=on|off`：当没有可领取任务时是否持续等待依赖完成并重试；默认 `on`
-- `watch-interval=<seconds>`：watch 轮询间隔；默认 60
+- `watch=on|off`：当没有可领取任务时是否持续等待并重试；默认 `off`（推荐关闭，避免空转）
+- `watch-interval=<seconds>`：watch 轮询间隔；默认 60（仅当 watch=on 时生效）
 - `release-on-stop=on|off`：人为停止时是否释放当前已领取但未产出 PR 的任务；默认 `on`
+- `local-claim=on|off`：是否在本地 main 的 tasks.md 先做“占位标记”再同步远端；默认 `on`
 
 ## 1) 前置检查（必须）
 
@@ -52,10 +53,37 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
 
 ## 3) 领取并标识（必须）
 
+领取采用两阶段占位（默认启用 `local-claim=on`）：
+
+### 3.1 本地占位（main）
+
+若 `local-claim=on`：
+- 必须先同步本地 main 到最新：
+  - `git fetch origin main --prune`
+  - `git switch main`
+  - `git pull --ff-only`
+- 在 `.trae/specs/<change-id>/tasks.md` 对应任务行末追加占位标记（不新增文件）：
+  - `@claimed-by:<login>`
+  - `@claim-at:<yyyy-mm-dd HH:MM>`
+  - `@issue:#<number>`
+  - `@branch:agent/issue-<number>-<yyyymmdd>`
+- 将上述回填提交到 main（只允许提交 tasks.md 的变更）：
+  - `chore(claim): 标记任务已领取（Issue #<number>）`
+  - trailers：`Agent-Task` / `Agent-Decision`
+- 不允许 push；push 仍由后续 PR 流程完成
+
+若本地占位提交失败（例如冲突/工作区不干净），停止领取并提示用户先对齐 main。
+
+### 3.2 远端占位（GitHub）
+
 对选中的 Issue 执行：
 - 添加 label：`status/in-progress`
 - 若 `assignee!=none`：设置 assignee（默认 @me）
-- 在 issue 留言（可选）：`Claimed by <user> on <date>`
+- 在 issue 留言（可选）：`Claimed by <user> on <date>, branch: agent/issue-<number>-<yyyymmdd>`
+
+若远端占位失败：
+- 必须提示用户执行 `/smart-release issue=<number>` 放回
+- 若启用了本地占位：提示用户回滚本地占位提交（或后续用 smart-sync 对齐回滚）
 
 ## 4) 开发循环（必须）
 
@@ -111,8 +139,12 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
 - 只有存在依赖未完成的 issues（不可领取）
 - 或者按 milestone 过滤后没有候选
 
-若 `watch=off`：
+默认行为（推荐）：
 - 输出“无可领取任务”的原因摘要并退出
+- 若原因是“依赖未完成”：
+  - 必须列出阻塞的 issue 及其 `Depends on` 指向的未完成上游
+  - 必须说明当前有哪些任务正在执行中（`status/in-progress` 列表）
+- 不进入循环等待，不进行轮询空转
 
 若 `watch=on`（默认）：
 - 输出“等待中”的原因摘要（例如依赖未完成的 issue 列表）

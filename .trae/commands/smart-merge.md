@@ -6,7 +6,7 @@ description: 自动合并 PR 并同步本地 main（可按标题关键词或编�
 你将作为“合并管家”，自动选择一个 PR 进行合并，并在合并后同步本地代码。
 
 默认行为：
-- 未指定 PR：优先合并最新更新的、标记了 `automerge` 标签的 PR；若不存在则合并最新更新的 open PR
+- 未指定 PR：仅自动处理标记了 `automerge` 标签的 PR（选择其中 updatedAt 最新的一条）；若不存在则停止并输出候选 PR 列表，提示用户用 `pr=<number>` 或 `q=<keyword>` 精确选择
 - 指定 PR：优先按 `pr=<number>`；否则按 `q=<keyword>` 在 PR 标题中匹配
 
 可选参数（用户在命令后追加即可）：
@@ -35,7 +35,7 @@ description: 自动合并 PR 并同步本地 main（可按标题关键词或编�
 2. 选择规则：
    - 若提供 `pr=<number>`：直接选该 PR
    - 否则若提供 `q=<keyword>`：在 title 中模糊匹配，若多条命中，选择 updatedAt 最新的一条
-   - 否则：优先选择带 `automerge` 标签的 PR 中 updatedAt 最新的一条；若不存在则选择所有 open PR 中 updatedAt 最新的一条
+   - 否则：优先选择带 `automerge` 标签的 PR 中 updatedAt 最新的一条；若不存在则停止并输出 open PR 列表，要求用户指定 `pr` 或 `q`
 
 必须跳过 draft PR（`isDraft=true`）。
 
@@ -69,4 +69,3 @@ description: 自动合并 PR 并同步本地 main（可按标题关键词或编�
 - 合并方式：merge/squash/rebase
 - 合并结果：已合并 / 已开启 auto-merge / 被规则阻塞（说明原因）
 - 本地同步结果：当前分支与 `git log -1 --oneline`
-

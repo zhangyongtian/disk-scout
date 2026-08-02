@@ -18,7 +18,7 @@ description: 基于项目提交规范自动分析 diff、给出拆分方案，�
 
 前置要求：
 - 你必须已在工作分支上（禁止在 `main` 直接提交）
-- 分支创建与同步由 `/smart-branch` 负责（先同步 main 再切分支）
+- 分支必须从 `main` 开出（推荐分支名：`agent/issue-<number>-<yyyymmdd>`）；可用 `/smart-claim mode=manual` 完成“领取+建分支”
 
 ## 1) 采集仓库状态（必须）
 
@@ -26,7 +26,7 @@ description: 基于项目提交规范自动分析 diff、给出拆分方案，�
    - `task` 缺省为 `misc`
 2. 获取分支与工作区状态：
    - `git rev-parse --abbrev-ref HEAD`
-   - 若为 `main`：停止并提示先运行 `/smart-branch` 切分支
+   - 若为 `main`：停止并提示先运行 `/smart-claim mode=manual` 或手动从 `main` 创建工作分支
    - `git status --porcelain=v1`
 3. 获取 diff（优先聚焦已暂存，其次未暂存）：
    - `git diff --staged`

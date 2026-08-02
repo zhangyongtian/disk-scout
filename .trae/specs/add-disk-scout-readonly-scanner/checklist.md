@@ -1,7 +1,6 @@
-- [ ] CLI 提供 `scan <path>`，并包含必要参数（top-files/top-dirs/min-size/format/ignore/ignore-file）
-- [ ] 默认不跟随符号链接；遇到权限/IO 错误不中断扫描
-- [ ] 文本报告包含：扫描根路径、统计信息、Top N 最大文件、Top N 最大目录
-- [ ] JSON 报告包含：meta（含 scan_root/统计信息）+ top_files + top_dirs
-- [ ] min-size 与 ignore/ignore-file 能生效（可用简单示例验证）
-- [ ] Release 支持生成 Windows .exe（zip）与 Linux tar.gz，并附带 sha256.txt
-
+- [ ] CLI 提供 `scan <path>`，并包含必要参数（top-files/top-dirs/min-size/format/ignore/ignore-file） @issues:#1,#2,#3
+- [ ] 默认不跟随符号链接；遇到权限/IO 错误不中断扫描 @issues:#1
+- [ ] 文本报告包含：扫描根路径、统计信息、Top N 最大文件、Top N 最大目录 @issues:#2
+- [ ] JSON 报告包含：meta（含 scan_root/统计信息）+ top_files + top_dirs @issues:#2
+- [ ] min-size 与 ignore/ignore-file 能生效（可用简单示例验证） @issues:#3
+- [ ] Release 支持生成 Windows .exe（zip）与 Linux tar.gz，并附带 sha256.txt @issues:#4
