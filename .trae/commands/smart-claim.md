@@ -30,6 +30,11 @@ description: 领取一个可执行 Issue（打 in-progress 标识/可选分配�
 
 ## 2) 选择“可领取任务”（必须）
 
+在领取前必须先“观察当前正在执行的任务”，避免重复开发：
+- 列出带 `status/in-progress` 的 open issues（含 assignees）
+- 列出 open PR（head 分支名）用于判断是否已有实现分支/PR
+- 输出一段“当前进行中任务概览”，再进入领取逻辑
+
 拉取候选（示例策略，必须实现一致性）：
 - 只考虑带 `task` label 的 open issues
 - 必须不包含：`status/in-progress`、`status/done`
@@ -50,8 +55,12 @@ description: 领取一个可执行 Issue（打 in-progress 标识/可选分配�
 
 ## 4) 开发循环（必须）
 
-1. 基于 issue 创建分支（命名示例）：
-   - `agent/issue-<number>-<yyyymmdd>`
+1. 基于 issue 创建分支（必须始终从 main 开新分支，不依赖当前所在分支）：
+   - `git fetch origin main --prune`
+   - `git switch main`
+   - `git pull --ff-only`
+   - `git switch -c agent/issue-<number>-<yyyymmdd>`
+   - 分支命名必须包含 Issue 编号，以便从分支名一眼看出“谁在做什么”
 2. 开发、验证（按项目约定）
 3. 提交与 PR：
    - `/smart-commit task=issue-<number> scope=<scope>`
@@ -74,4 +83,3 @@ description: 领取一个可执行 Issue（打 in-progress 标识/可选分配�
 - 本次领取的 issue/PR 列表（链接）
 - 当前阻塞点（若有）
 - 下一步建议（继续 / 等待合并 / 处理冲突）
-

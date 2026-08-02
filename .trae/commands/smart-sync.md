@@ -55,7 +55,7 @@ description: 从 tasks.md 生成里程碑与任务 Issues，并在对齐确认�
    - 创建前：`gh issue list --state open --limit 100 --json number,title,url,labels`
    - 若存在高度相似标题的 open issue：停止并提示复用/合并策略
    - 否则创建，并写入：
-     - Body：Order/Scope/Summary/Definition of Done/Dependencies
+     - Body：Order/Scope/Summary/Definition of Done/Depends on
      - Labels：task + scope + priority + status/todo
      - Milestone：按计划指定
 4. 回填：
@@ -67,4 +67,3 @@ description: 从 tasks.md 生成里程碑与任务 Issues，并在对齐确认�
 - 已创建/复用的 milestones 与 issues（编号+链接）
 - 可并行执行的 Issue 列表
 - 下一步建议：用 `/smart-claim` 领取任务开始开发
-
