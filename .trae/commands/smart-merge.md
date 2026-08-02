@@ -24,8 +24,21 @@ description: 自动合并 PR 并同步本地 main（可按标题关键词或编�
 - 否则：只处理带 `automerge` 标签的 PR，取最新；找不到则停止并输出候选列表
 
 合并策略：
-- `mergeStateStatus=CLEAN`：按 `method` 直接合并（支持时删除远端分支）
+- `mergeStateStatus=CLEAN`：按 `method` 直接合并，并删除远端分支（必须）
 - 否则：开启 GitHub Auto-merge（不绕过 review/CI 规则，只提示阻塞原因）
+
+分支清理（必须）：
+
+1) 远端分支（必须尝试删除）
+
+- 所有合并/auto-merge 命令必须携带 `--delete-branch`，让 GitHub 在合并后删除 PR 的 head 分支（仅对同仓库分支有效；来自 fork 时可能无权限删除）。
+
+2) 本地分支（尽量自动清理）
+
+- 合并后同步本地 `<base>` 之后，若本地存在 PR 的 head 分支且不是 `<base>`，删除本地分支以保持本地分支列表干净：
+  - 若当前不在该分支：`git branch -d <head-branch>`
+  - 若正在该分支：先切换到 `<base>` 再删
+- 若 `-d` 失败（仍有未合并提交），停止并输出原因，让用户决定是否手动 `-D` 强删。
 
 同步本地（pull=on）：
 - `git fetch origin <base> --prune`
