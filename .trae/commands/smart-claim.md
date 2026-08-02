@@ -118,7 +118,12 @@ description: 一键领取并完成一个 Issue（从 main 开分支→实现→�
    - push：`git push -u origin HEAD`
    - PR body 必须包含：
      - Summary
-     - Commits（`git log --oneline origin/main..HEAD` 实际输出）
+     - Commits（Linkable）：以 markdown link 列表形式贴出（让 reviewer 可点击跳转到每个 commit）
+       - 取 repo url：优先 `gh repo view --json url -q .url`，否则从 `git remote get-url origin` 推断
+       - 取 commits：`git log --pretty=format:%H::%s origin/main..HEAD`
+       - 逐行渲染为 markdown：
+         - `- [<sha7>](<repo_url>/commit/<sha40>) <subject>`
+     - Commits（Raw，可选）：如需要保留“命令原始输出”，再追加 `git log --oneline origin/main..HEAD` 的逐行文本
      - Files Changed（`git diff --name-only origin/main..HEAD` 实际输出）
      - `Closes: #<number>`
 5. 合并策略（必须）

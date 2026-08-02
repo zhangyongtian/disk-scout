@@ -48,6 +48,11 @@ description: 将当前分支的提交推送到远端并创建 PR（支持可选�
 1. 列出相对 base 的提交与变更范围：
    - `git fetch origin <base> --prune`（失败则继续，但要提示可能不准）
    - `git log --oneline origin/<base>..HEAD`
+   - 为了让 PR 里的 commit 可点击跳转，生成一份“可跳转 commits 列表”（建议）：
+     - 取 repo url：优先 `gh repo view --json url -q .url`，否则从 `git remote get-url origin` 推断
+     - 取 commits：`git log --pretty=format:%H::%s origin/<base>..HEAD`
+     - 逐行渲染为 markdown：
+       - `- [<sha7>](<repo_url>/commit/<sha40>) <subject>`
    - `git diff --name-only origin/<base>..HEAD`
    - 生成 PR body 时必须把上述两条命令的输出“写入文本”，禁止把命令替换表达式（如 `$(git log ...)`）原样写入 body
    - 注意：若使用 heredoc 写文件，禁止使用 `cat <<'EOF'`（单引号 heredoc 会阻止 `$(...)` 与 `$VAR` 展开）；应先执行命令得到输出再拼接文本，或使用不带引号的 `<<EOF`
@@ -58,7 +63,8 @@ description: 将当前分支的提交推送到远端并创建 PR（支持可选�
    - Task：来自 `task` 参数
    - Order：来自 `order` 参数（若提供）
    - Summary：用 3–6 条要点概述本次变更意图（不要只罗列文件名）
-   - Commits：贴 `git log --oneline origin/<base>..HEAD`
+   - Commits（Linkable）：以 markdown link 列表形式贴出（让 reviewer 可点击跳转到每个 commit）
+   - Commits（Raw，可选）：如需要保留“命令原始输出”，再追加 `git log --oneline origin/<base>..HEAD` 的逐行文本
    - Files Changed：贴 `git diff --name-only origin/<base>..HEAD`
    - Known Limitations / Follow-ups：如有则写
    - 若提供 `issue`：
@@ -75,7 +81,10 @@ Issue: #<issue>（可选）
 Summary:
 - ...
 
-Commits:
+Commits (Linkable):
+- [<sha7>](<repo_url>/commit/<sha40>) <subject>
+
+Commits (Raw, optional):
 <把 git log --oneline origin/<base>..HEAD 的实际输出逐行贴在这里>
 
 Files Changed:
