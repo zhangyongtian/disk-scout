@@ -65,6 +65,28 @@ description: 将当前分支的提交推送到远端并创建 PR（支持可选�
      - 仅当本次变更与该任务一致时，追加 `Closes: #<issue>`
      - 若一致性不足（无法从 diff/提交/描述判断），改为 `Refs: #<issue>` 或不关联
 
+4. PR body 模板（必须按此结构生成）
+
+```
+Task: <task>
+Order: <NNN>
+Issue: #<issue>（可选）
+
+Summary:
+- ...
+
+Commits:
+<把 git log --oneline origin/<base>..HEAD 的实际输出逐行贴在这里>
+
+Files Changed:
+<把 git diff --name-only origin/<base>..HEAD 的实际输出逐行贴在这里>
+
+Known Limitations / Follow-ups:
+- （可选）
+
+Closes: #<issue>（可选）
+```
+
 一致性判断建议：
 - 变更文件路径与 issue scope 匹配（例如 api/db/workflow/infra/docs 等）
 - PR summary 与 issue title/summary 关键词高度相关
@@ -96,4 +118,6 @@ description: 将当前分支的提交推送到远端并创建 PR（支持可选�
 - 当前分支名、远端分支名
 - PR 链接（若已创建）
 - 是否已启用 auto-merge（若用户指定）
+- Commits（必须）：贴 `git log --oneline origin/<base>..HEAD` 的输出
+- Files Changed（必须）：贴 `git diff --name-only origin/<base>..HEAD` 的输出
 - 下一步建议（例如：等待 CI、请求 review、补充说明）
