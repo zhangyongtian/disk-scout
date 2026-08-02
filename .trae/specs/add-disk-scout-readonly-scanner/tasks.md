@@ -19,10 +19,10 @@
   - [ ] 支持 `--ignore` 多次指定
   - [ ] 支持 `--ignore-file` 读取忽略规则
 
-- [ ] Task 5: 发布与多平台产物（CI / Release）（Issue #4）
-  - [ ] GitHub Actions：PR/Push 进行 build/test
-  - [ ] Tag/Release 时产出多平台可运行包：Linux tar.gz + Windows zip（含 .exe）
-  - [ ] 生成 `sha256.txt` 并作为 Release asset 上传
+- [x] Task 5: 发布与多平台产物（CI / Release）（Issue #4）
+  - [x] GitHub Actions：PR/Push 进行 build/test
+  - [x] Tag/Release 时产出多平台可运行包：Linux tar.gz + Windows zip（含 .exe）
+  - [x] 生成 `sha256.txt` 并作为 Release asset 上传
   - [ ] 后续扩展：rpm/deb（可作为下一里程碑或后续 Task）
 
 - [ ] Task 6: 最小验证脚本（打印式验证）（Issue #5）
