@@ -26,6 +26,7 @@ jobs:
         with:
           ref: refs/tags/${{ env.TAG }}
       - uses: dtolnay/rust-toolchain@stable
+      - run: cargo generate-lockfile
       - run: cargo build --release --locked
       - name: package
         shell: bash
@@ -47,6 +48,7 @@ jobs:
         with:
           ref: refs/tags/${{ env.TAG }}
       - uses: dtolnay/rust-toolchain@stable
+      - run: cargo generate-lockfile
       - run: cargo build --release --locked
       - name: package
         shell: bash
