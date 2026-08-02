@@ -1,4 +1,10 @@
-use crate::{cli::ScanArgs, ignore::IgnoreConfig, output::OutputFormat, plan::ScanPlan, scanner};
+use crate::{
+    cli::ScanArgs,
+    ignore::IgnoreConfig,
+    output::{format_bytes, OutputFormat},
+    plan::ScanPlan,
+    scanner,
+};
 
 pub fn run(args: ScanArgs) -> i32 {
     let plan = ScanPlan {
@@ -34,7 +40,11 @@ fn print_result(plan: &ScanPlan, result: &scanner::ScanResult) {
 
 fn print_result_text(plan: &ScanPlan, result: &scanner::ScanResult) {
     println!("root: {}", plan.root.display());
-    println!("bytes_total: {}", result.stats.bytes_total);
+    println!(
+        "bytes_total: {} ({})",
+        format_bytes(result.stats.bytes_total),
+        result.stats.bytes_total
+    );
     println!("files_seen: {}", result.stats.files_seen);
     println!("dirs_seen: {}", result.stats.dirs_seen);
     println!("errors_total: {}", result.stats.errors_total);
@@ -43,31 +53,46 @@ fn print_result_text(plan: &ScanPlan, result: &scanner::ScanResult) {
     println!();
     println!("top_files:");
     for item in &result.top_files {
-        println!("  {} {}", item.size, item.path.display());
+        println!(
+            "  {} ({}) {}",
+            format_bytes(item.size),
+            item.size,
+            item.path.display()
+        );
     }
 
     println!();
     println!("top_dirs:");
     for item in &result.top_dirs {
-        println!("  {} {}", item.size, item.path.display());
+        println!(
+            "  {} ({}) {}",
+            format_bytes(item.size),
+            item.size,
+            item.path.display()
+        );
     }
 }
 
 fn print_result_json(plan: &ScanPlan, result: &scanner::ScanResult) {
     println!("{{");
-    println!("  \"root\": \"{}\",", escape_json_string(&plan.root.display().to_string()));
-    println!("  \"stats\": {{");
-    println!("    \"bytes_total\": {},", result.stats.bytes_total);
-    println!("    \"files_seen\": {},", result.stats.files_seen);
-    println!("    \"dirs_seen\": {},", result.stats.dirs_seen);
-    println!("    \"errors_total\": {},", result.stats.errors_total);
-    println!("    \"duration_ms\": {}", result.stats.duration.as_millis());
+    println!("  \"meta\": {{");
+    println!(
+        "    \"scan_root\": \"{}\",",
+        escape_json_string(&plan.root.display().to_string())
+    );
+    println!("    \"stats\": {{");
+    println!("      \"bytes_total\": {},", result.stats.bytes_total);
+    println!("      \"files_seen\": {},", result.stats.files_seen);
+    println!("      \"dirs_seen\": {},", result.stats.dirs_seen);
+    println!("      \"errors_total\": {},", result.stats.errors_total);
+    println!("      \"duration_ms\": {}", result.stats.duration.as_millis());
+    println!("    }}");
     println!("  }},");
     println!("  \"top_files\": [");
     for (idx, item) in result.top_files.iter().enumerate() {
         let comma = if idx + 1 == result.top_files.len() { "" } else { "," };
         println!(
-            "    {{ \"size\": {}, \"path\": \"{}\" }}{}",
+            "    {{ \"size_bytes\": {}, \"path\": \"{}\" }}{}",
             item.size,
             escape_json_string(&item.path.display().to_string()),
             comma
@@ -78,13 +103,31 @@ fn print_result_json(plan: &ScanPlan, result: &scanner::ScanResult) {
     for (idx, item) in result.top_dirs.iter().enumerate() {
         let comma = if idx + 1 == result.top_dirs.len() { "" } else { "," };
         println!(
-            "    {{ \"size\": {}, \"path\": \"{}\" }}{}",
+            "    {{ \"size_bytes\": {}, \"path\": \"{}\" }}{}",
             item.size,
             escape_json_string(&item.path.display().to_string()),
             comma
         );
     }
-    println!("  ]");
+    println!("  ],");
+    println!("  \"errors\": {{");
+    println!("    \"total\": {},", result.errors.total);
+    println!("    \"samples\": [");
+    for (idx, sample) in result.errors.samples.iter().enumerate() {
+        let comma = if idx + 1 == result.errors.samples.len() {
+            ""
+        } else {
+            ","
+        };
+        println!(
+            "      {{ \"path\": \"{}\", \"message\": \"{}\" }}{}",
+            escape_json_string(&sample.path.display().to_string()),
+            escape_json_string(&sample.message),
+            comma
+        );
+    }
+    println!("    ]");
+    println!("  }}");
     println!("}}");
 }
 
