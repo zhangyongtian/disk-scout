@@ -1,0 +1,4 @@
+- [ ] Top files 与 Top dirs 各自有独立滚动条，且互不影响滚动位置
+- [ ] min-size 支持“数值 + 单位选择”，能正确换算 bytes 并参与过滤
+- [ ] Windows GUI 能正确显示中文路径/文本（不再出现方块/乱码）
+- [ ] Windows CI 的 GUI 编译校验通过（features=gui, bin=disk-scout-gui）
