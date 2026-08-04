@@ -343,47 +343,64 @@ impl eframe::App for App {
                 ));
 
                 ui.add_space(12.0);
-                ui.heading("Top files");
-                for item in &mut result.top_files {
-                    ui.horizontal(|ui| {
-                        ui.label(format!(
-                            "{} ({})",
-                            disk_scout::output::format_bytes(item.size),
-                            item.size
-                        ));
+                let remaining = ui.available_height();
+                let list_height = ((remaining - 24.0) / 2.0).max(160.0);
 
-                        let path_text = item.path.display().to_string();
-                        if item.deleted {
-                            ui.label(egui::RichText::new(&path_text).strikethrough());
-                        } else {
-                            ui.label(path_text.clone());
-                        }
+                ui.group(|ui| {
+                    ui.heading("Top files");
+                    egui::ScrollArea::vertical()
+                        .id_source("top_files_scroll")
+                        .max_height(list_height)
+                        .show(ui, |ui| {
+                            for item in &mut result.top_files {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!(
+                                        "{} ({})",
+                                        disk_scout::output::format_bytes(item.size),
+                                        item.size
+                                    ));
 
-                        if ui.button("Copy path").clicked() {
-                            ui.output_mut(|o| o.copied_text = path_text.clone());
-                        }
+                                    let path_text = item.path.display().to_string();
+                                    if item.deleted {
+                                        ui.label(egui::RichText::new(&path_text).strikethrough());
+                                    } else {
+                                        ui.label(path_text.clone());
+                                    }
 
-                        if ui
-                            .add_enabled(!item.deleted, egui::Button::new("Delete"))
-                            .clicked()
-                        {
-                            delete_request = Some(item.path.clone());
-                        }
-                    });
-                }
+                                    if ui.button("Copy path").clicked() {
+                                        ui.output_mut(|o| o.copied_text = path_text.clone());
+                                    }
+
+                                    if ui
+                                        .add_enabled(!item.deleted, egui::Button::new("Delete"))
+                                        .clicked()
+                                    {
+                                        delete_request = Some(item.path.clone());
+                                    }
+                                });
+                            }
+                        });
+                });
 
                 ui.add_space(12.0);
-                ui.heading("Top dirs");
-                for item in &result.top_dirs {
-                    ui.horizontal(|ui| {
-                        ui.label(format!(
-                            "{} ({})",
-                            disk_scout::output::format_bytes(item.size),
-                            item.size
-                        ));
-                        ui.label(item.path.display().to_string());
-                    });
-                }
+                ui.group(|ui| {
+                    ui.heading("Top dirs");
+                    egui::ScrollArea::vertical()
+                        .id_source("top_dirs_scroll")
+                        .max_height(list_height)
+                        .show(ui, |ui| {
+                            for item in &result.top_dirs {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!(
+                                        "{} ({})",
+                                        disk_scout::output::format_bytes(item.size),
+                                        item.size
+                                    ));
+                                    ui.label(item.path.display().to_string());
+                                });
+                            }
+                        });
+                });
 
             }
 
