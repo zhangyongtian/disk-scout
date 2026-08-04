@@ -1,20 +1,3 @@
-use clap::ValueEnum;
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
-pub enum OutputFormat {
-    Text,
-    Json,
-}
-
-impl std::fmt::Display for OutputFormat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OutputFormat::Text => write!(f, "text"),
-            OutputFormat::Json => write!(f, "json"),
-        }
-    }
-}
-
 pub fn format_bytes(bytes: u64) -> String {
     if bytes < 1024 {
         return format!("{bytes} B");
