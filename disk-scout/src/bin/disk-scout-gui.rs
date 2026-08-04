@@ -38,6 +38,22 @@ struct ScanConfig {
 }
 
 #[cfg(windows)]
+struct FileEntry {
+    path: std::path::PathBuf,
+    size: u64,
+    deleted: bool,
+}
+
+#[cfg(windows)]
+struct DisplayResult {
+    root: std::path::PathBuf,
+    stats: disk_scout::scanner::ScanStats,
+    top_files: Vec<FileEntry>,
+    top_dirs: Vec<disk_scout::scanner::SizedPath>,
+    errors: disk_scout::scanner::ScanErrors,
+}
+
+#[cfg(windows)]
 struct App {
     root_path: String,
     top_files: usize,
@@ -47,7 +63,10 @@ struct App {
     ignore_file: String,
     status: ScanStatus,
     receiver: Option<std::sync::mpsc::Receiver<Result<ScanOutput, String>>>,
-    result: Option<disk_scout::scanner::ScanResult>,
+    result: Option<DisplayResult>,
+    message: String,
+    confirm_delete: Option<std::path::PathBuf>,
+    confirm_delete_open: bool,
 }
 
 #[cfg(windows)]
@@ -63,6 +82,9 @@ impl App {
             status: ScanStatus::Idle,
             receiver: None,
             result: None,
+            message: String::new(),
+            confirm_delete: None,
+            confirm_delete_open: false,
         }
     }
 
@@ -130,6 +152,9 @@ impl App {
         self.receiver = Some(rx);
         self.status = ScanStatus::Scanning;
         self.result = None;
+        self.message = String::new();
+        self.confirm_delete = None;
+        self.confirm_delete_open = false;
 
         std::thread::spawn(move || {
             let plan = disk_scout::plan::ScanPlan {
@@ -158,7 +183,23 @@ impl App {
 
         match rx.try_recv() {
             Ok(Ok(out)) => {
-                self.result = Some(out.result);
+                let top_files = out
+                    .result
+                    .top_files
+                    .iter()
+                    .map(|x| FileEntry {
+                        path: x.path.clone(),
+                        size: x.size,
+                        deleted: false,
+                    })
+                    .collect::<Vec<_>>();
+                self.result = Some(DisplayResult {
+                    root: out.result.root,
+                    stats: out.result.stats,
+                    top_files,
+                    top_dirs: out.result.top_dirs,
+                    errors: out.result.errors,
+                });
                 self.receiver = None;
                 self.status = ScanStatus::Done;
             }
@@ -172,6 +213,37 @@ impl App {
                 self.status = ScanStatus::Failed("scan worker disconnected".to_string());
             }
         }
+    }
+
+    fn request_delete(&mut self, path: std::path::PathBuf) {
+        self.confirm_delete = Some(path);
+        self.confirm_delete_open = true;
+    }
+
+    fn perform_delete(&mut self, path: &std::path::PathBuf) -> Result<(), String> {
+        let Some(result) = &self.result else {
+            return Err("no scan result".to_string());
+        };
+
+        let root = result
+            .root
+            .canonicalize()
+            .map_err(|e| format!("failed to canonicalize root: {e}"))?;
+        let p = path
+            .canonicalize()
+            .map_err(|e| format!("failed to canonicalize target: {e}"))?;
+
+        if !p.starts_with(&root) {
+            return Err("refuse to delete file outside scan root".to_string());
+        }
+
+        let meta = std::fs::metadata(&p).map_err(|e| format!("failed to stat file: {e}"))?;
+        if !meta.is_file() {
+            return Err("refuse to delete non-regular file".to_string());
+        }
+
+        trash::delete(&p).map_err(|e| format!("failed to move to recycle bin: {e}"))?;
+        Ok(())
     }
 }
 
@@ -240,8 +312,11 @@ impl eframe::App for App {
                 ScanStatus::Failed(e) => format!("failed: {e}"),
             };
             ui.label(format!("Status: {status_text}"));
+            if !self.message.is_empty() {
+                ui.label(&self.message);
+            }
 
-            if let Some(result) = &self.result {
+            if let Some(result) = &mut self.result {
                 ui.add_space(12.0);
                 ui.separator();
                 ui.add_space(8.0);
@@ -264,16 +339,30 @@ impl eframe::App for App {
 
                 ui.add_space(12.0);
                 ui.heading("Top files");
-                for item in &result.top_files {
+                for item in &mut result.top_files {
                     ui.horizontal(|ui| {
                         ui.label(format!(
                             "{} ({})",
                             disk_scout::output::format_bytes(item.size),
                             item.size
                         ));
-                        ui.label(item.path.display().to_string());
+
+                        let mut path_text = item.path.display().to_string();
+                        if item.deleted {
+                            ui.label(egui::RichText::new(path_text).strikethrough());
+                        } else {
+                            ui.label(path_text.clone());
+                        }
+
                         if ui.button("Copy path").clicked() {
-                            ui.output_mut(|o| o.copied_text = item.path.display().to_string());
+                            ui.output_mut(|o| o.copied_text = path_text);
+                        }
+
+                        if ui
+                            .add_enabled(!item.deleted, egui::Button::new("Delete"))
+                            .clicked()
+                        {
+                            self.request_delete(item.path.clone());
                         }
                     });
                 }
@@ -289,6 +378,59 @@ impl eframe::App for App {
                         ));
                         ui.label(item.path.display().to_string());
                     });
+                }
+
+                if self.confirm_delete_open {
+                    let mut open = self.confirm_delete_open;
+                    egui::Window::new("Confirm delete")
+                        .collapsible(false)
+                        .resizable(false)
+                        .open(&mut open)
+                        .show(ctx, |ui| {
+                            let target = self
+                                .confirm_delete
+                                .as_ref()
+                                .map(|p| p.display().to_string())
+                                .unwrap_or_else(|| "-".to_string());
+
+                            ui.label("Move file to recycle bin?");
+                            ui.label(target);
+
+                            ui.add_space(12.0);
+                            ui.horizontal(|ui| {
+                                if ui.button("Cancel").clicked() {
+                                    open = false;
+                                }
+
+                                if ui.button("Delete").clicked() {
+                                    if let Some(p) = self.confirm_delete.clone() {
+                                        match self.perform_delete(&p) {
+                                            Ok(()) => {
+                                                if let Some(r) = &mut self.result {
+                                                    for f in &mut r.top_files {
+                                                        if f.path == p {
+                                                            f.deleted = true;
+                                                        }
+                                                    }
+                                                }
+                                                self.message = format!(
+                                                    "Deleted (to recycle bin): {}",
+                                                    p.display()
+                                                );
+                                            }
+                                            Err(e) => {
+                                                self.message = format!("Delete failed: {e}");
+                                            }
+                                        }
+                                    }
+                                    open = false;
+                                }
+                            });
+                        });
+                    self.confirm_delete_open = open;
+                    if !open {
+                        self.confirm_delete = None;
+                    }
                 }
             }
         });

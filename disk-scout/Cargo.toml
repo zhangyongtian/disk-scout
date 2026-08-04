@@ -21,3 +21,4 @@ required-features = ["gui"]
 [target.'cfg(windows)'.dependencies]
 eframe = "0.28"
 rfd = "0.14"
+trash = "5"
