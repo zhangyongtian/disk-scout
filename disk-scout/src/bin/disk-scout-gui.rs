@@ -18,6 +18,36 @@ fn main() -> eframe::Result<()> {
 use eframe::egui;
 
 #[cfg(windows)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MinSizeUnit {
+    B,
+    K,
+    M,
+    G,
+}
+
+#[cfg(windows)]
+impl MinSizeUnit {
+    fn multiplier(self) -> u64 {
+        match self {
+            Self::B => 1,
+            Self::K => 1024,
+            Self::M => 1024 * 1024,
+            Self::G => 1024 * 1024 * 1024,
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::B => "B",
+            Self::K => "K",
+            Self::M => "M",
+            Self::G => "G",
+        }
+    }
+}
+
+#[cfg(windows)]
 enum ScanStatus {
     Idle,
     Scanning,
@@ -61,7 +91,8 @@ struct App {
     root_path: String,
     top_files: usize,
     top_dirs: usize,
-    min_size: String,
+    min_size_value: String,
+    min_size_unit: MinSizeUnit,
     ignore_patterns: String,
     ignore_file: String,
     status: ScanStatus,
@@ -79,7 +110,8 @@ impl App {
             root_path: String::new(),
             top_files: 20,
             top_dirs: 20,
-            min_size: "0".to_string(),
+            min_size_value: "0".to_string(),
+            min_size_unit: MinSizeUnit::B,
             ignore_patterns: String::new(),
             ignore_file: String::new(),
             status: ScanStatus::Idle,
@@ -130,7 +162,16 @@ impl App {
             .map(|l| l.to_string())
             .collect::<Vec<_>>();
 
-        let min_size = disk_scout::size::parse_size_bytes(&self.min_size)?;
+        let min_size_value = self.min_size_value.trim();
+        if min_size_value.is_empty() {
+            return Err("min size is empty".to_string());
+        }
+        let value = min_size_value
+            .parse::<u64>()
+            .map_err(|_| "min size is not a valid number".to_string())?;
+        let min_size = value
+            .checked_mul(self.min_size_unit.multiplier())
+            .ok_or_else(|| "min size is too large".to_string())?;
 
         Ok(ScanConfig {
             root_path,
@@ -278,7 +319,15 @@ impl eframe::App for App {
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.label("Min size");
-                ui.text_edit_singleline(&mut self.min_size);
+                ui.text_edit_singleline(&mut self.min_size_value);
+                egui::ComboBox::from_id_salt("min_size_unit")
+                    .selected_text(self.min_size_unit.label())
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut self.min_size_unit, MinSizeUnit::B, "B");
+                        ui.selectable_value(&mut self.min_size_unit, MinSizeUnit::K, "K");
+                        ui.selectable_value(&mut self.min_size_unit, MinSizeUnit::M, "M");
+                        ui.selectable_value(&mut self.min_size_unit, MinSizeUnit::G, "G");
+                    });
             });
 
             ui.add_space(8.0);
