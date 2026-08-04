@@ -15,7 +15,9 @@
 
 从 GitHub Releases 下载对应平台的压缩包，解压后即可运行：
 
-- Windows：解压后得到 `disk-scout.exe`
+- Windows：解压后得到
+  - `disk-scout.exe`（CLI）
+  - `disk-scout-gui.exe`（GUI）
 - Linux：解压后得到 `disk-scout`
 
 ### 方式 B：从源码构建
@@ -31,6 +33,16 @@ cargo build --release
 - Linux/macOS：`target/release/disk-scout`
 - Windows：`target/release/disk-scout.exe`
 
+可选构建 GUI（仅 Windows）：
+
+```bash
+cargo build --release --features gui --bin disk-scout-gui
+```
+
+产物位于：
+
+- Windows：`target/release/disk-scout-gui.exe`
+
 ## 快速开始
 
 Windows（PowerShell，推荐用终端运行而非双击）：
@@ -38,6 +50,12 @@ Windows（PowerShell，推荐用终端运行而非双击）：
 ```powershell
 .\disk-scout.exe --help
 .\disk-scout.exe scan "C:\Users\%USERNAME%\Downloads"
+```
+
+Windows GUI：
+
+```powershell
+.\disk-scout-gui.exe
 ```
 
 Linux/macOS：
@@ -192,6 +210,12 @@ JSON 输出是“可读格式”的单个 JSON 对象（不是 jsonl/ndjson）�
 .\disk-scout.exe --help
 .\disk-scout.exe scan "C:\"
 ```
+
+如果你希望使用图形界面，请运行 `disk-scout-gui.exe`。
+
+### GUI 删除文件是否安全
+
+GUI 的删除功能默认会尝试将文件移入回收站，并在执行前弹出二次确认。同时会拒绝删除扫描根路径之外的文件与非常规文件类型。
 
 ### Windows 提示缺少 DLL（如 VCRUNTIME140_1.dll）
 
