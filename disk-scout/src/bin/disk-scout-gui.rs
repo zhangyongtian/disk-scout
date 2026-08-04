@@ -15,6 +15,9 @@ fn main() -> eframe::Result<()> {
 }
 
 #[cfg(windows)]
+use eframe::egui;
+
+#[cfg(windows)]
 enum ScanStatus {
     Idle,
     Scanning,
