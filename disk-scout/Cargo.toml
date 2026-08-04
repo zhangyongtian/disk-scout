@@ -5,3 +5,19 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
+
+[features]
+gui = []
+
+[[bin]]
+name = "disk-scout"
+path = "src/main.rs"
+
+[[bin]]
+name = "disk-scout-gui"
+path = "src/bin/disk-scout-gui.rs"
+required-features = ["gui"]
+
+[target.'cfg(windows)'.dependencies]
+eframe = "0.28"
+rfd = "0.14"
