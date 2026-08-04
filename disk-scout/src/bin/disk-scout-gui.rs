@@ -371,7 +371,7 @@ impl eframe::App for App {
             ui.horizontal(|ui| {
                 ui.label("Min size");
                 ui.text_edit_singleline(&mut self.min_size_value);
-                egui::ComboBox::from_id_salt("min_size_unit")
+                egui::ComboBox::from_id_source("min_size_unit")
                     .selected_text(self.min_size_unit.label())
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut self.min_size_unit, MinSizeUnit::B, "B");
