@@ -21,3 +21,5 @@ jobs:
       - run: cargo generate-lockfile
       - run: cargo test --locked
       - run: cargo build --release --locked
+      - if: ${{ matrix.os == 'windows-latest' }}
+        run: cargo build --release --locked --features gui --bin disk-scout-gui
