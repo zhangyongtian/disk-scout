@@ -1,10 +1,11 @@
-use crate::{
-    cli::ScanArgs,
+use disk_scout::{
     ignore::IgnoreConfig,
-    output::{format_bytes, OutputFormat},
+    output::format_bytes,
     plan::ScanPlan,
     scanner,
 };
+
+use crate::cli::{OutputFormat, ScanArgs};
 
 pub fn run(args: ScanArgs) -> i32 {
     let plan = ScanPlan {
@@ -12,7 +13,6 @@ pub fn run(args: ScanArgs) -> i32 {
         top_files: args.top_files,
         top_dirs: args.top_dirs,
         min_size: args.min_size,
-        format: args.format,
         ignore: IgnoreConfig {
             patterns: args.ignore,
             ignore_file: args.ignore_file,
@@ -21,7 +21,7 @@ pub fn run(args: ScanArgs) -> i32 {
 
     match scanner::scan(&plan) {
         Ok(result) => {
-            print_result(&plan, &result);
+            print_result(args.format, &result);
             0
         }
         Err(e) => {
@@ -31,22 +31,22 @@ pub fn run(args: ScanArgs) -> i32 {
     }
 }
 
-fn print_result(plan: &ScanPlan, result: &scanner::ScanResult) {
-    match plan.format {
-        OutputFormat::Text => print_result_text(plan, result),
-        OutputFormat::Json => print_result_json(plan, result),
+fn print_result(format: OutputFormat, result: &scanner::ScanResult) {
+    match format {
+        OutputFormat::Text => print_result_text(result),
+        OutputFormat::Json => print_result_json(result),
     }
 }
 
-fn print_result_text(plan: &ScanPlan, result: &scanner::ScanResult) {
-    print!("{}", render_result_text(plan, result));
+fn print_result_text(result: &scanner::ScanResult) {
+    print!("{}", render_result_text(result));
 }
 
-fn print_result_json(plan: &ScanPlan, result: &scanner::ScanResult) {
-    print!("{}", render_result_json(plan, result));
+fn print_result_json(result: &scanner::ScanResult) {
+    print!("{}", render_result_json(result));
 }
 
-fn render_result_text(plan: &ScanPlan, result: &scanner::ScanResult) -> String {
+fn render_result_text(result: &scanner::ScanResult) -> String {
     use std::fmt::Write;
 
     let mut out = String::new();
@@ -93,7 +93,7 @@ fn render_result_text(plan: &ScanPlan, result: &scanner::ScanResult) -> String {
     out
 }
 
-fn render_result_json(plan: &ScanPlan, result: &scanner::ScanResult) -> String {
+fn render_result_json(result: &scanner::ScanResult) -> String {
     use std::fmt::Write;
 
     let mut out = String::new();
@@ -195,17 +195,8 @@ mod tests {
 
     #[test]
     fn renders_text_report() {
-        let plan = ScanPlan {
-            root: "/tmp/root".into(),
-            top_files: 2,
-            top_dirs: 2,
-            min_size: 0,
-            format: OutputFormat::Text,
-            ignore: IgnoreConfig::default(),
-        };
-
         let result = scanner::ScanResult {
-            root: plan.root.clone(),
+            root: "/tmp/root".into(),
             stats: scanner::ScanStats {
                 files_seen: 3,
                 dirs_seen: 2,
@@ -230,7 +221,7 @@ mod tests {
             },
         };
 
-        let out = render_result_text(&plan, &result);
+        let out = render_result_text(&result);
         assert!(out.contains("root: "));
         assert!(out.contains("bytes_total: "));
         assert!(out.contains("KiB"));
@@ -240,17 +231,8 @@ mod tests {
 
     #[test]
     fn renders_json_report() {
-        let plan = ScanPlan {
-            root: "/tmp/root".into(),
-            top_files: 2,
-            top_dirs: 2,
-            min_size: 0,
-            format: OutputFormat::Json,
-            ignore: IgnoreConfig::default(),
-        };
-
         let result = scanner::ScanResult {
-            root: plan.root.clone(),
+            root: "/tmp/root".into(),
             stats: scanner::ScanStats {
                 files_seen: 1,
                 dirs_seen: 1,
@@ -263,7 +245,7 @@ mod tests {
             errors: scanner::ScanErrors::default(),
         };
 
-        let out = render_result_json(&plan, &result);
+        let out = render_result_json(&result);
         assert!(out.contains("\"meta\""));
         assert!(out.contains("\"scan_root\""));
         assert!(out.contains("\"stats\""));

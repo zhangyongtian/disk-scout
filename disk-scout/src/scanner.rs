@@ -315,7 +315,6 @@ mod tests {
             top_files: 2,
             top_dirs: 10,
             min_size: 0,
-            format: crate::output::OutputFormat::Text,
             ignore: crate::ignore::IgnoreConfig::default(),
         };
 
@@ -351,7 +350,6 @@ mod tests {
             top_files: 10,
             top_dirs: 10,
             min_size: 1024,
-            format: crate::output::OutputFormat::Text,
             ignore: crate::ignore::IgnoreConfig {
                 patterns: vec!["*.tmp".to_string()],
                 ignore_file: Some(ignore_file),
@@ -386,7 +384,6 @@ mod tests {
             top_files: 10,
             top_dirs: 10,
             min_size: 0,
-            format: crate::output::OutputFormat::Text,
             ignore: crate::ignore::IgnoreConfig::default(),
         };
 

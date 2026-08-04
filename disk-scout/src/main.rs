@@ -1,9 +1,5 @@
 mod cli;
 mod commands;
-mod ignore;
-mod output;
-mod plan;
-mod scanner;
 
 use clap::Parser;
 

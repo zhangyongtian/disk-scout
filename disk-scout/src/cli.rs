@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
-
-use crate::output::OutputFormat;
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
 #[command(name = "disk-scout")]
@@ -15,6 +13,21 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     Scan(ScanArgs),
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
+pub enum OutputFormat {
+    Text,
+    Json,
+}
+
+impl std::fmt::Display for OutputFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OutputFormat::Text => write!(f, "text"),
+            OutputFormat::Json => write!(f, "json"),
+        }
+    }
 }
 
 #[derive(Args, Clone)]
