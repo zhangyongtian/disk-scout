@@ -270,9 +270,9 @@ impl eframe::App for App {
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 ui.label("Top files");
-                ui.add(egui::DragValue::new(&mut self.top_files).clamp_range(0..=10000));
+                ui.add(egui::DragValue::new(&mut self.top_files).range(0..=10000));
                 ui.label("Top dirs");
-                ui.add(egui::DragValue::new(&mut self.top_dirs).clamp_range(0..=10000));
+                ui.add(egui::DragValue::new(&mut self.top_dirs).range(0..=10000));
             });
 
             ui.add_space(8.0);
@@ -319,6 +319,8 @@ impl eframe::App for App {
                 ui.label(&self.message);
             }
 
+            let mut delete_request: Option<std::path::PathBuf> = None;
+
             if let Some(result) = &mut self.result {
                 ui.add_space(12.0);
                 ui.separator();
@@ -350,22 +352,22 @@ impl eframe::App for App {
                             item.size
                         ));
 
-                        let mut path_text = item.path.display().to_string();
+                        let path_text = item.path.display().to_string();
                         if item.deleted {
-                            ui.label(egui::RichText::new(path_text).strikethrough());
+                            ui.label(egui::RichText::new(&path_text).strikethrough());
                         } else {
                             ui.label(path_text.clone());
                         }
 
                         if ui.button("Copy path").clicked() {
-                            ui.output_mut(|o| o.copied_text = path_text);
+                            ui.output_mut(|o| o.copied_text = path_text.clone());
                         }
 
                         if ui
                             .add_enabled(!item.deleted, egui::Button::new("Delete"))
                             .clicked()
                         {
-                            self.request_delete(item.path.clone());
+                            delete_request = Some(item.path.clone());
                         }
                     });
                 }
@@ -383,57 +385,70 @@ impl eframe::App for App {
                     });
                 }
 
-                if self.confirm_delete_open {
-                    let mut open = self.confirm_delete_open;
-                    egui::Window::new("Confirm delete")
-                        .collapsible(false)
-                        .resizable(false)
-                        .open(&mut open)
-                        .show(ctx, |ui| {
-                            let target = self
-                                .confirm_delete
-                                .as_ref()
-                                .map(|p| p.display().to_string())
-                                .unwrap_or_else(|| "-".to_string());
+            }
 
-                            ui.label("Move file to recycle bin?");
-                            ui.label(target);
+            if let Some(path) = delete_request {
+                self.request_delete(path);
+            }
 
-                            ui.add_space(12.0);
-                            ui.horizontal(|ui| {
-                                if ui.button("Cancel").clicked() {
-                                    open = false;
-                                }
+            if self.confirm_delete_open {
+                let mut open = self.confirm_delete_open;
+                let mut action: Option<bool> = None;
 
-                                if ui.button("Delete").clicked() {
-                                    if let Some(p) = self.confirm_delete.clone() {
-                                        match self.perform_delete(&p) {
-                                            Ok(()) => {
-                                                if let Some(r) = &mut self.result {
-                                                    for f in &mut r.top_files {
-                                                        if f.path == p {
-                                                            f.deleted = true;
-                                                        }
-                                                    }
-                                                }
-                                                self.message = format!(
-                                                    "Deleted (to recycle bin): {}",
-                                                    p.display()
-                                                );
-                                            }
-                                            Err(e) => {
-                                                self.message = format!("Delete failed: {e}");
+                egui::Window::new("Confirm delete")
+                    .collapsible(false)
+                    .resizable(false)
+                    .open(&mut open)
+                    .show(ctx, |ui| {
+                        let target = self
+                            .confirm_delete
+                            .as_ref()
+                            .map(|p| p.display().to_string())
+                            .unwrap_or_else(|| "-".to_string());
+
+                        ui.label("Move file to recycle bin?");
+                        ui.label(target);
+
+                        ui.add_space(12.0);
+                        ui.horizontal(|ui| {
+                            if ui.button("Cancel").clicked() {
+                                action = Some(false);
+                            }
+
+                            if ui.button("Delete").clicked() {
+                                action = Some(true);
+                            }
+                        });
+                    });
+
+                if let Some(do_delete) = action {
+                    if do_delete {
+                        if let Some(p) = self.confirm_delete.clone() {
+                            match self.perform_delete(&p) {
+                                Ok(()) => {
+                                    if let Some(r) = &mut self.result {
+                                        for f in &mut r.top_files {
+                                            if f.path == p {
+                                                f.deleted = true;
                                             }
                                         }
                                     }
-                                    open = false;
+                                    self.message =
+                                        format!("Deleted (to recycle bin): {}", p.display());
                                 }
-                            });
-                        });
-                    self.confirm_delete_open = open;
-                    if !open {
-                        self.confirm_delete = None;
+                                Err(e) => {
+                                    self.message = format!("Delete failed: {e}");
+                                }
+                            }
+                        }
                     }
+
+                    open = false;
+                }
+
+                self.confirm_delete_open = open;
+                if !open {
+                    self.confirm_delete = None;
                 }
             }
         });
