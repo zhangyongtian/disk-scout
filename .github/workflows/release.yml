@@ -13,6 +13,7 @@ permissions:
 
 env:
   BIN_NAME: disk-scout
+  GUI_BIN_NAME: disk-scout-gui
   TAG: ${{ inputs.tag }}
 
 jobs:
@@ -50,11 +51,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo generate-lockfile
       - run: cargo build --release --locked
+      - run: cargo build --release --locked --features gui --bin ${{ env.GUI_BIN_NAME }}
       - name: package
         shell: bash
         run: |
           cp "target/release/${BIN_NAME}.exe" "${BIN_NAME}.exe"
-          7z a "${BIN_NAME}-${TAG}-x86_64-pc-windows-msvc.zip" "${BIN_NAME}.exe"
+          cp "target/release/${GUI_BIN_NAME}.exe" "${GUI_BIN_NAME}.exe"
+          7z a "${BIN_NAME}-${TAG}-x86_64-pc-windows-msvc.zip" "${BIN_NAME}.exe" "${GUI_BIN_NAME}.exe"
       - uses: actions/upload-artifact@v4
         with:
           name: windows
