@@ -58,6 +58,12 @@ Windows GUI：
 .\disk-scout-gui.exe
 ```
 
+GUI 交互要点：
+
+- Top files 与 Top dirs 各自独立滚动（不需要拉长窗口）
+- Min size 使用“数值 + 单位（B/K/M/G）”选择，等价于字节阈值过滤
+- 顶部会显示字体状态；若中文路径显示方块，可优先确认是否已加载 Windows 中文字体
+
 Linux/macOS：
 
 ```bash
