@@ -48,6 +48,50 @@ impl MinSizeUnit {
 }
 
 #[cfg(windows)]
+fn configure_fonts(ctx: &egui::Context) -> String {
+    let candidates = [
+        r"C:\Windows\Fonts\msyh.ttc",
+        r"C:\Windows\Fonts\msyh.ttf",
+        r"C:\Windows\Fonts\msyhbd.ttf",
+        r"C:\Windows\Fonts\simhei.ttf",
+        r"C:\Windows\Fonts\simsun.ttc",
+        r"C:\Windows\Fonts\mingliu.ttc",
+    ];
+
+    let mut fonts = egui::FontDefinitions::default();
+    let mut loaded_names = Vec::new();
+
+    for (idx, path) in candidates.iter().enumerate() {
+        let bytes = match std::fs::read(path) {
+            Ok(b) => b,
+            Err(_) => continue,
+        };
+
+        let name = format!("windows_font_{idx}");
+        fonts
+            .font_data
+            .insert(name.clone(), egui::FontData::from_owned(bytes));
+
+        if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
+            family.insert(0, name.clone());
+        }
+        if let Some(family) = fonts.families.get_mut(&egui::FontFamily::Monospace) {
+            family.insert(0, name.clone());
+        }
+
+        loaded_names.push(path.to_string());
+        break;
+    }
+
+    if loaded_names.is_empty() {
+        "字体：默认（中文可能显示异常）".to_string()
+    } else {
+        ctx.set_fonts(fonts);
+        "字体：已加载 Windows 中文字体".to_string()
+    }
+}
+
+#[cfg(windows)]
 enum ScanStatus {
     Idle,
     Scanning,
@@ -99,13 +143,15 @@ struct App {
     receiver: Option<std::sync::mpsc::Receiver<Result<ScanOutput, String>>>,
     result: Option<DisplayResult>,
     message: String,
+    font_status: String,
     confirm_delete: Option<std::path::PathBuf>,
     confirm_delete_open: bool,
 }
 
 #[cfg(windows)]
 impl App {
-    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        let font_status = configure_fonts(&cc.egui_ctx);
         Self {
             root_path: String::new(),
             top_files: 20,
@@ -118,6 +164,7 @@ impl App {
             receiver: None,
             result: None,
             message: String::new(),
+            font_status,
             confirm_delete: None,
             confirm_delete_open: false,
         }
@@ -299,6 +346,10 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("disk-scout");
             ui.add_space(8.0);
+            if !self.font_status.is_empty() {
+                ui.label(&self.font_status);
+                ui.add_space(8.0);
+            }
 
             ui.label("Root path");
             ui.horizontal(|ui| {
