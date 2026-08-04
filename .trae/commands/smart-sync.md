@@ -43,7 +43,10 @@ Issue 匹配主键（按优先级）：
 输出一份“将要发生的变化”清单：
 - 将创建/复用/更新的 issues
 - milestone 计划：
-  - 若提供 `milestone=<title>`：将新建 issues 设为该里程碑；复用/绑定的 issues 若未设置里程碑则补齐；若已设置其他里程碑则仅提示（不强制覆盖）
+  - 若提供 `milestone=<title>`：
+    - 若远端不存在该里程碑：plan SHALL 提示将创建里程碑
+    - issue 匹配范围：plan SHOULD 按该里程碑过滤候选 issues，避免与其他里程碑中相同 `Order: NNN` 的 issue 混淆
+    - 将新建 issues 设为该里程碑；复用/绑定的 issues 若未设置里程碑则补齐；若已设置其他里程碑则仅提示（不强制覆盖）
 - 将回填到 tasks.md 的变更（apply 时才会实际写回）：
   - 建议/将补齐的 `[NNN]`（优先使用 `Task <N>:` 推导为 `[NNN]`，否则按任务顺序分配）
   - 绑定 `（Issue #N）` 与勾选变更（若 issue 已 closed）
@@ -63,10 +66,14 @@ Issue 匹配主键（按优先级）：
 
 ### 3.3 写入 GitHub（幂等）
 - 拉取远端 issues（open/closed）用于匹配与复用
+- 若提供 `milestone=<title>` 且远端不存在该里程碑：apply SHALL 创建该里程碑（仅设置 title；其它字段使用 GitHub 默认值）
 - 对每个本地任务：
   - 若绑定了 `（Issue #N）`：更新 #N（只补齐缺失字段/标签/里程碑，不覆盖用户正文）
   - 否则确定 Order（来源优先级：`[NNN]` > `Task <N>:` 推导 > plan 生成并已写回的 `[NNN]`）
-  - 按 `Order: NNN` 查找可复用 issue；命中则回填 `（Issue #N）`
+  - 查找可复用 issue：
+    - 若提供 `milestone=<title>`：优先在该里程碑范围内按 `Order: NNN` 查找
+    - 否则：按 `Order: NNN` 查找
+    - 命中则回填 `（Issue #N）`
   - 否则创建新 issue：
     - 标题建议以 `[NNN] ` 作为前缀，便于人工浏览
     - labels 至少包含：`task` 与 `Order: NNN`
